@@ -42,7 +42,7 @@ def identificar_intencao(frase):
 # Buscar informações na wiki
 def buscar_informacoes(termo_busca):
     print(f"Buscando informações para: {termo_busca}")
-    url = "https://pt.stardewvalleywiki.com/index.php?search=" + termo_busca.replace(" ", "+")
+    url = f"https://pt.stardewvalleywiki.com/{termo_busca.replace(' ', '_')}"
     
     try:
         # Fazer a requisição para a URL da pesquisa
@@ -57,7 +57,7 @@ def buscar_informacoes(termo_busca):
             return "Erro: Não foi possível encontrar o conteúdo principal da página."
 
         # Extrair título
-        titulo = soup.find("h1").get_text(strip=True)
+        titulo = escapar_markdown(soup.find("h1").get_text(strip=True))
 
         # Identificar intenção
         intencao = identificar_intencao(termo_busca)
@@ -71,21 +71,24 @@ def buscar_informacoes(termo_busca):
             tabela = conteudo_principal.find("table", {"id": "infoboxtable"})
             if tabela:
                 texto_tabela = formatar_tabela(tabela)
-                return f"*{escapar_markdown(titulo)}*\n\n{texto_tabela}\n\n[Leia mais na Wiki]({escapar_markdown(url)})"
+                return f"*{escapar_markdown(titulo)}*\n\n{texto_tabela}\n\n[Leia mais na Wiki]({url})"
             else:
                 paragrafos = conteudo_principal.find_all("p", limit=3)
-                texto_paragrafos = "\n\n".join([p.get_text(strip=True) for p in paragrafos if p.get_text(strip=True)])
-                return f"**{escapar_markdown(titulo)}**\n\n{texto_paragrafos}\n\n[Leia mais na Wiki]({escapar_markdown(url)})"
+                texto_paragrafos = "\n\n".join([escapar_markdown(p.get_text(strip=True)) for p in paragrafos if p.get_text(strip=True)])
+                return f"*{escapar_markdown(titulo)}*\n\n{texto_paragrafos}\n\n[Leia mais na Wiki]({url})"
 
         # Se uma tabela foi encontrada
         if tabela:
             texto_tabela = formatar_tabela(tabela)
-            return f"*{escapar_markdown(titulo)}*\n\n{texto_tabela}\n\n[Leia mais na Wiki]({escapar_markdown(url)})"
+            print(f"Texto da tabela formatado:\n{texto_tabela}")  # Debug
+            return f"*{escapar_markdown(titulo)}*\n\n{texto_tabela}\n\n[Leia mais na Wiki]({url})"
         else:
-            return f"**{escapar_markdown(titulo)}**\n\nNão consegui encontrar informações relevantes para '{termo_busca}'.\n\n[Leia mais na Wiki]({escapar_markdown(url)})"
+            return f"*{escapar_markdown(titulo)}*\n\nNão consegui encontrar informações relevantes para '{termo_busca}'.\n\n[Leia mais na Wiki]({escapar_markdown(url)})"
     except Exception as e:
         print(f"Erro ao buscar informações: {e}")
-        return "Erro ao buscar informações no site. Verifique sua conexão ou tente novamente."
+        return f"Erro ao buscar informações no site. Detalhes: {escapar_markdown(str(e))}"
+
+
 
 def buscar_tabela_por_titulo(conteudo, titulo_desejado):
     """
@@ -107,20 +110,18 @@ def formatar_tabela(tabela):
     texto_tabela = []
     for linha in linhas:
         colunas = linha.find_all(["th", "td"])
-        # Verifica se há duas colunas (chave-valor)
         if len(colunas) == 2:
             chave = escapar_markdown(colunas[0].get_text(strip=True))
-            valor = colunas[1].get_text(strip=True)
-            # Corrigir separação de múltiplos itens com vírgulas, mantendo formatação original
-            if " " in valor and not "," in valor:
-                valor = ", ".join(valor.split("  "))  # Divide apenas onde há múltiplos espaços
-            valor = escapar_markdown(valor)
+            valor = escapar_markdown(colunas[1].get_text(strip=True))
+            
+            # Melhorar formatação para listas ou parentescos
+            valor = re.sub(r"([A-Za-z])\(", r"\1 (", valor)  # Adiciona espaço antes do parêntese
+            valor = re.sub(r"\)", r")", valor)  # Garante fechamento correto do parêntese
+            
             texto_tabela.append(f"*{chave}:* {valor}")
         elif len(colunas) == 1:
-            # Caso seja uma célula única (como título de seção)
             texto_tabela.append(f"*{escapar_markdown(colunas[0].get_text(strip=True))}*")
     return "\n".join(texto_tabela)
-
 
 def escapar_markdown(texto):
     """
@@ -129,9 +130,13 @@ def escapar_markdown(texto):
     caracteres_especiais = r"_*[]()~`>#+-=|{}.!"
     for char in caracteres_especiais:
         texto = texto.replace(char, f"\\{char}")
-    # Escapar caracteres que podem não estar incluídos diretamente
-    return texto.replace("\\", "\\\\")
-
+    # Certifique-se de que todas as barras invertidas sejam escapadas corretamente
+    texto = texto.replace("\\", "\\\\")
+    # Substitua espaços duplicados por espaço único para evitar problemas
+    texto = re.sub(r'\s+', ' ', texto)
+    # Escapar parênteses e hífen adicionalmente
+    texto = texto.replace("(", "\\(").replace(")", "\\)").replace("-", "\\-")
+    return texto
 
 # Processar frases para identificar palavras-chave
 def processar_frase(frase):
@@ -167,7 +172,7 @@ def processar_frase(frase):
     "mineração": [
         "mina", "caverna", "crânio", "vulcão", "ferro", "cobre", "ouro", "irídio", "carvão", 
         "quartzo", "cristal", "esmeralda", "geodo", "geodo omni", "geodo congelado", 
-        "geodo magmático", "espada", "picareta", "adaga", "maça", "monstro", "gosma", 
+        "geodo magmático", "espada", "picareta", "adaga", "maça", "monstros", "gosma", 
         "fantasma", "morcego", "sombra", "esqueleto"
     ],
     "fazenda": [
