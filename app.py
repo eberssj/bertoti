@@ -63,7 +63,7 @@ def buscar_informacoes(termo_busca):
         intencao = identificar_intencao(termo_busca)
 
         if intencao == "presentes":
-            tabela = buscar_tabela_por_titulo(conteudo_principal, ["Presentear", "Favoritos"])
+            tabela = buscar_tabela_por_titulo(conteudo_principal, ["Presentear", "Favoritos", "Ama", "Gosta"])
         elif intencao == "horários":
             tabela = buscar_tabela_por_titulo(conteudo_principal, ["Horário", "Agenda", "Rotina", "Primavera"])
         else:
@@ -87,16 +87,16 @@ def buscar_informacoes(termo_busca):
     except Exception as e:
         print(f"Erro ao buscar informações: {e}")
         return f"Erro ao buscar informações no site. Detalhes: {escapar_markdown(str(e))}"
-
-def buscar_tabela_por_titulo(conteudo, titulo_desejado):
+    
+def buscar_tabela_por_titulo(conteudo, titulos_desejados):
     """
     Busca uma tabela pelo título ou conteúdo próximo a ela.
     """
     tabelas = conteudo.find_all("table", {"class": "wikitable"})
     for tabela in tabelas:
         # Verifica se há uma legenda ou cabeçalho próximo que corresponde ao título desejado
-        legenda = tabela.find_previous_sibling("h3")
-        if legenda and titulo_desejado.lower() in legenda.get_text(strip=True).lower():
+        legenda = tabela.find_previous_sibling(["h2", "h3", "h4", "a", "p"])
+        if legenda and any(titulo.lower() in legenda.get_text(strip=True).lower() for titulo in titulos_desejados):
             return tabela
     return None
 
@@ -110,11 +110,11 @@ def formatar_tabela(tabela):
         colunas = linha.find_all(["th", "td"])
         if len(colunas) == 2:
             chave = escapar_markdown(colunas[0].get_text(strip=True))
-            valor = escapar_markdown(colunas[1].get_text(strip=True))
+            valor = escapar_markdown(" ".join(colunas[1].stripped_strings))  # Garante espaços adequados entre palavras e links
             
             # Melhorar formatação para listas ou parentescos
             valor = re.sub(r"([A-Za-z])\(", r"\1 (", valor)  # Adiciona espaço antes do parêntese
-            valor = re.sub(r"\)", r")", valor)  # Garante fechamento correto do parêntese
+            valor = re.sub(r"\)", r") ", valor)  # Garante fechamento correto do parêntese e adiciona espaço
             
             texto_tabela.append(f"*{chave}:* {valor}")
         elif len(colunas) == 1:
