@@ -88,8 +88,6 @@ def buscar_informacoes(termo_busca):
         print(f"Erro ao buscar informações: {e}")
         return f"Erro ao buscar informações no site. Detalhes: {escapar_markdown(str(e))}"
 
-
-
 def buscar_tabela_por_titulo(conteudo, titulo_desejado):
     """
     Busca uma tabela pelo título ou conteúdo próximo a ela.
@@ -125,18 +123,10 @@ def formatar_tabela(tabela):
 
 def escapar_markdown(texto):
     """
-    Escapa caracteres especiais para o MarkdownV2 do Telegram.
+    Escapa caracteres reservados no modo MarkdownV2 do Telegram.
     """
-    caracteres_especiais = r"_*[]()~`>#+-=|{}.!"
-    for char in caracteres_especiais:
-        texto = texto.replace(char, f"\\{char}")
-    # Certifique-se de que todas as barras invertidas sejam escapadas corretamente
-    texto = texto.replace("\\", "\\\\")
-    # Substitua espaços duplicados por espaço único para evitar problemas
-    texto = re.sub(r'\s+', ' ', texto)
-    # Escapar parênteses e hífen adicionalmente
-    texto = texto.replace("(", "\\(").replace(")", "\\)").replace("-", "\\-")
-    return texto
+    caracteres_reservados = r'[_*[\]()~`>#+\-=|{}.!]'
+    return re.sub(caracteres_reservados, r'\\\g<0>', texto)
 
 # Processar frases para identificar palavras-chave
 def processar_frase(frase):
