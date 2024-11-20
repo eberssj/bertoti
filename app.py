@@ -7,7 +7,7 @@ import requests
 from fuzzywuzzy import fuzz
 import unicodedata
 
-TOKEN = "6698271536:AAEWL7Z7wcRg7qFuVoakmb0AKtqngkQkyjY"
+TOKEN = "7810939484:AAFiVC1-qMJEPNCHFZxUFo-bV9GH30AhA_0"
 
 def remover_acentos(texto):
     """
@@ -241,6 +241,20 @@ async def buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         await update.message.reply_text("Por favor, forneça uma frase para buscar na wiki.")
 
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Função chamada quando o comando /start é dado no Telegram"""
+    # Exibe uma mensagem interativa de boas-vindas
+    mensagem_boas_vindas = (
+        "Olá! Eu sou o bot do Stardew Valley! 👋\n\n"
+        "Para usar o bot, basta digitar um comando relacionado ao que você deseja saber. Aqui estão algumas opções:\n\n"
+        "✅ Para buscar presentes e gostos dos NPCs, digite algo como: `/buscar Presentes de Sebastian`\n"
+        "✅ Para consultar horários e rotina dos NPCs, digite: `/buscar Horário de Abigail`\n"
+        "✅ Para saber mais sobre eventos no jogo, tente: `/buscar Eventos de Primavera`\n\n"
+        "Esses são apenas exemplos! Experimente diferentes comandos como `/buscar` para ver o que você pode descobrir sobre Stardew Valley! 😄\n"
+    )
+    
+    # Envia a mensagem de boas-vindas
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=mensagem_boas_vindas)
 
 # Função principal
 async def main():
@@ -249,6 +263,7 @@ async def main():
 
     # Adicionar o handler do comando /buscar
     application.add_handler(CommandHandler("buscar", buscar))
+    application.add_handler(CommandHandler("start", start))
 
     # Iniciar o bot
     await application.initialize()
