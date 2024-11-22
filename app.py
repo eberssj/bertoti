@@ -1,23 +1,22 @@
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler
+from flask import Flask, request
+from telegram.ext import filters
+from telegram.ext import Application
 
-# Função para extrair informações sobre as minas
+
+# Função para obter informações sobre as minas
 def get_minas_info():
     url = "https://pt.stardewvalleywiki.com/As_Minas"
     response = requests.get(url)
     if response.status_code == 200:
         soup = BeautifulSoup(response.content, "html.parser")
-        
-        # Extraindo informações principais (ajuste de acordo com a estrutura da página)
         content = soup.find("div", {"class": "mw-parser-output"})
         if content:
-            # Pegando todos os parágrafos, mas vamos filtrar os irrelevantes
             paragraphs = content.find_all("p")
-            
-            # Vamos começar pegando os parágrafos a partir do segundo (ignorando o primeiro "Anão")
-            relevant_paragraphs = paragraphs[1:5]  # Pegando os próximos 4 parágrafos relevantes
+            relevant_paragraphs = paragraphs[1:5]
             info = "\n\n".join([p.get_text().strip() for p in relevant_paragraphs])
             return info
         else:
@@ -29,14 +28,175 @@ def get_minas_info():
 async def minas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Buscando informações sobre as minas...")
     minas_info = get_minas_info()
-    
-    # Adicionando o link ao final da mensagem
     info_com_link = f"{minas_info}\n\nPara mais informações acesse: https://pt.stardewvalleywiki.com/As_Minas"
-    
-    # Enviando a mensagem com o link
     await update.message.reply_text(info_com_link)
 
-# Função para extrair informações sobre as Estaçoes
+# Função para tratar mensagens genéricas
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message_text = update.message.text.lower()
+    
+    # Lista de palavras-chave que acionam a função minas
+    palavras_chave_minas = ["minas", "informações minas", "quero minas"]
+    # Lista de palavras-chave que acionam a função estacoes
+    palavras_chave_estacoes = ["estações", "informações estações", "quero estações", "infromacoes estacoes", "estacoes"]
+    # Definindo palavras-chave para cada estação
+    palavras_chave_verao = [
+        "verão", "verao", "informações verão", "informações verao", "verao", "informaçoes verao", "Verão", "Verao"
+    ]
+
+    palavras_chave_primavera = [
+        "primavera", "informações primavera", "primaveras", "Primavera", "informaçoes primavera"
+    ]
+
+    palavras_chave_outono = [
+        "outono", "informações outono", "informaçoes outono", "Outono"
+    ]
+
+    palavras_chave_inverno = [
+        "inverno", "informações inverno", "Inverno", "informaçoes inverno"
+    ]
+
+    # Lista de palavras-chave que acionam a função festivais
+    palavras_chave_festivais = ["festivais", "informações festivais", "quero festivais", "infromacoes festivais", "festival"]
+    # Lista de palavras-chave que acionam a função aldeoes (nomes dos aldeões)
+    # Lista de palavras-chave para os aldeões
+    palavras_chave_aldeoes = [
+        "npcs", "npc", "casavéis", "casar", "personagem", "personagens", 
+        "namorar", "namoravéis", "namoraveis", "informações aldeões", 
+        "informações aldeoes"
+    ]
+
+    # Palavras-chave para o Alex
+    palavras_chave_alex = [
+        "alex", "Alex", "informações alex", "informações Alex", 
+        "infromações alex", "infromações Alex", "informações sobre Alex"
+    ]
+
+    # Palavras-chave para o Elliott
+    palavras_chave_elliott = [
+        "elliott", "Elliott", "informações elliott", "informações Elliott", 
+        "infromações elliott", "infromações Elliott", "informações sobre Elliott"
+    ]
+
+    # Palavras-chave para o Harvey
+    palavras_chave_harvey = [
+        "harvey", "Harvey", "informações harvey", "informações Harvey", 
+        "infromações harvey", "infromações Harvey", "informações sobre Harvey"
+    ]
+
+    # Palavras-chave para o Sam
+    palavras_chave_sam = [
+        "sam", "Sam", "informações sam", "informações Sam", 
+        "infromações sam", "infromações Sam", "informações sobre Sam"
+    ]
+
+    # Palavras-chave para o Sebastian
+    palavras_chave_sebastian = [
+        "sebastian", "Sebastian", "informações sebastian", "informações Sebastian", 
+        "infromações sebastian", "infromações Sebastian", "informações sobre Sebastian"
+    ]
+
+    # Palavras-chave para o Shane
+    palavras_chave_shane = [
+        "shane", "Shane", "informações shane", "informações Shane", 
+        "infromações shane", "infromações Shane", "informações sobre Shane"
+    ]
+
+    # Palavras-chave para a Abigail
+    palavras_chave_abigail = [
+        "abigail", "Abigail", "informações abigail", "informações Abigail", 
+        "infromações abigail", "infromações Abigail", "informações sobre Abigail"
+    ]
+
+    # Palavras-chave para a Emily
+    palavras_chave_emily = [
+        "emily", "Emily", "informações emily", "informações Emily", 
+        "infromações emily", "infromações Emily", "informações sobre Emily"
+    ]
+
+    # Palavras-chave para a Haley
+    palavras_chave_haley = [
+        "haley", "Haley", "informações haley", "informações Haley", 
+        "infromações haley", "infromações Haley", "informações sobre Haley"
+    ]
+
+    # Palavras-chave para a Leah
+    palavras_chave_leah = [
+        "leah", "Leah", "informações leah", "informações Leah", 
+        "infromações leah", "infromações Leah", "informações sobre Leah"
+    ]
+
+    # Palavras-chave para a Maru
+    palavras_chave_maru = [
+        "maru", "Maru", "informações maru", "informações Maru", 
+        "infromações maru", "infromações Maru", "informações sobre Maru"
+    ]
+
+    # Palavras-chave para a Penny
+    palavras_chave_penny = [
+        "penny", "Penny", "informações penny", "informações Penny", 
+        "infromações penny", "infromações Penny", "informações sobre Penny"
+    ]
+    # Lista de palavras-chave para o comando /armazem_do_pierre
+    palavras_chave_armazem_pierre = ["armazém do pierre", "armazem do pierre", "Pierre", "pierre", "loja do pierre", "informações pierre", "informaçoes pierre"]
+    # Lista de palavras-chave para o comando /clinica_do_harvey
+    palavras_chave_clinica_harvey = ["clínica do harvey",  "clínica harvey", "clinica harvey", "clinica do harvey", "hospital"]
+    # Lista de palavras-chave que acionam o comando /start
+    palavras_chave_saudacao = ["oi", "olá", "oii", "olá!","saudações", "bom dia", "boa tarde", "boa noite"]
+    
+   # Verifica se alguma palavra-chave está contida na mensagem
+    if any(palavra in message_text for palavra in palavras_chave_minas):
+        await minas(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_estacoes):
+        await estacoes(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_verao):
+        await verao(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_primavera):
+        await primavera(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_outono):
+        await outono(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_inverno):
+        await inverno(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_festivais):
+        await festivais(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_aldeoes):
+        await aldeoes(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_alex):
+        await alex(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_elliott):
+        await elliott(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_harvey):
+        await harvey(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_sam):
+        await sam(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_sebastian):
+        await sebastian(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_shane):
+        await shane(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_abigail):
+        await abigail(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_emily):
+        await emily(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_haley):
+        await haley(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_leah):
+        await leah(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_maru):
+        await maru(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_penny):
+        await penny(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_armazem_pierre):
+        await armazem_do_pierre(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_clinica_harvey):
+        await clinica_do_harvey(update, context)
+    elif any(palavra in message_text for palavra in palavras_chave_saudacao):
+        # Chama a função start quando uma saudação é detectada
+        await start(update, context)
+    else:
+        # Resposta padrão caso a mensagem não contenha as palavras-chave
+        await update.message.reply_text("Desculpe, não entendi sua mensagem. Tente novamente.")
+
+# Função para extrair informações sobre as Estações
 def get_estacoes_info():
     url = "https://pt.stardewvalleywiki.com/Esta%C3%A7%C3%B5es"
     response = requests.get(url)
@@ -1322,7 +1482,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Mensagem simplificada sobre o bot
     intro_message = (
         "Olá! Eu sou o Helper de Stardew Valley, seu assistente para navegar pelo mundo de Stardew Valley.\n"
+        "Ou você pode apenas pesquisar o que quer! Exemplpo ""informações sobre as minas"".\n"
         "Comigo, você pode acessar informações sobre diversos locais, festivais, NPCs e estações do ano.\n\n"
+        
         "Escolha uma das opções abaixo para começar:\n\n"
         "Lugares:\n\n"
         "/minas - Minas\n"
@@ -1416,11 +1578,16 @@ async def main():
     app.add_handler(CommandHandler("armazem_do_pierre", armazem_do_pierre))
     # Adicionando o comando /clinica_do_harvey
     app.add_handler(CommandHandler("clinica_do_harvey", clinica_do_harvey))
+ # Registrando os manipuladores
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
     
     print("Bot rodando!")
     await app.run_polling()
 
 if __name__ == "__main__":
+    import asyncio
+    
     # Inicializa o bot diretamente sem chamar asyncio.run()
     app = ApplicationBuilder().token("7810939484:AAFiVC1-qMJEPNCHFZxUFo-bV9GH30AhA_0").build()
     #ugares
@@ -1467,5 +1634,10 @@ if __name__ == "__main__":
     #start
     app.add_handler(CommandHandler("start", start))
 
+
+
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    
     print("Bot rodando!")
     app.run_polling()
